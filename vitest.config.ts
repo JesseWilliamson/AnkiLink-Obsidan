@@ -1,3 +1,7 @@
+/* eslint-env node */
+/* global __dirname */
+/* eslint-disable import/no-nodejs-modules */
+
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 
