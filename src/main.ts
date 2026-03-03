@@ -13,7 +13,7 @@ export default class AnkiLink extends Plugin {
     async onload() {
         await this.loadSettings();
 
-        this.addRibbonIcon(ANKI_LINK_ICON, "Sample", async (_evt: MouseEvent) => {
+        this.addRibbonIcon(ANKI_LINK_ICON, "Sync Anki cards", async (_evt: MouseEvent) => {
             await this.runSyncAndNotify();
         });
 

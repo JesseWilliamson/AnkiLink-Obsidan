@@ -1,6 +1,6 @@
 {
     "name": "anki-link",
-    "version": "1.0.0",
+    "version": "1.0.5",
     "description": "Turn your Obsidian notes into synced Anki flashcards.",
     "main": "main.js",
     "type": "module",
