@@ -11,7 +11,23 @@ Turn your Obsidian notes into synced Anki flashcards for better retention.
   - Code blocks
   - Inline and block math with Latex
 
-## Quick start
+## Setup
+1. Install the plugin in Obsidian
+2. Install [Anki Connect Plus](https://ankiweb.net/shared/info/2036732292) in Anki
+3. In Anki, navigate to Tools -> Addons -> AnkiConnect -> Config, and add `app://obsidian.md` to the `webCordOriginList` like this:
+```
+{
+    "apiKey": null,
+    "apiLogPath": null,
+    "webBindAddress": "127.0.0.1",
+    "webBindPort": 8765,
+    "webCorsOrigin": "http://localhost",
+    "webCorsOriginList": [
+        "http://localhost",
+        "app://obsidian.md"
+    ]
+}
+```
 
 Each flashcard starts with a callout line and continues with quoted body lines:
 
