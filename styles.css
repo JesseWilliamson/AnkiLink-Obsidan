@@ -10,3 +10,7 @@ If your plugin does not need CSS, delete this file.
     --callout-color: 2, 122, 255;
     --callout-icon: lucide-circle-question-mark;
 }
+
+.anki-link-missing-deck-list li {
+    margin-top: 0.25rem;
+}
