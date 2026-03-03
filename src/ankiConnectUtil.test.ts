@@ -1,93 +1,93 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { requestUrlMock } = vi.hoisted(() => ({
-	requestUrlMock: vi.fn(),
+    requestUrlMock: vi.fn(),
 }));
 
 vi.mock("obsidian", () => ({
-	requestUrl: requestUrlMock,
+    requestUrl: requestUrlMock,
 }));
 
 import { defaultAnkiConnectClient } from "./anki-connect/client";
 import {
-	ANKI_LINK_TAG,
-	TARGET_DECK,
-	addTagToNotes,
-	buildNote,
-	findNoteIdsByTagInDeck,
-	getNoteById,
-	noteHasTag,
+    ANKI_LINK_TAG,
+    TARGET_DECK,
+    addTagToNotes,
+    buildNote,
+    findNoteIdsByTagInDeck,
+    getNoteById,
+    noteHasTag,
 } from "./ankiConnectUtil";
 import type { NoteInfo } from "./anki-connect/types";
 
 describe("ankiConnectUtil", () => {
-	afterEach(() => {
-		vi.restoreAllMocks();
-	});
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
 
-	it("buildNote uses expected defaults", () => {
-		const note = buildNote("front text", "back text");
+    it("buildNote uses expected defaults", () => {
+        const note = buildNote("front text", "back text");
 
-		expect(note).toEqual({
-			deckName: TARGET_DECK,
-			modelName: "AnkiLink Basic",
-			fields: { Front: "front text", Back: "back text" },
-			tags: [ANKI_LINK_TAG],
-			options: { allowDuplicate: true },
-		});
-	});
+        expect(note).toEqual({
+            deckName: TARGET_DECK,
+            modelName: "AnkiLink Basic",
+            fields: { Front: "front text", Back: "back text" },
+            tags: [ANKI_LINK_TAG],
+            options: { allowDuplicate: true },
+        });
+    });
 
-	it("noteHasTag compares tags case-insensitively", () => {
-		const note = {
-			noteId: 1,
-			modelName: "AnkiLink Basic",
-			tags: ["AnKiLiNk"],
-			cards: [101],
-			fields: {
-				Front: { value: "A", order: 0 },
-				Back: { value: "B", order: 1 },
-			},
-		} satisfies NoteInfo;
+    it("noteHasTag compares tags case-insensitively", () => {
+        const note = {
+            noteId: 1,
+            modelName: "AnkiLink Basic",
+            tags: ["AnKiLiNk"],
+            cards: [101],
+            fields: {
+                Front: { value: "A", order: 0 },
+                Back: { value: "B", order: 1 },
+            },
+        } satisfies NoteInfo;
 
-		expect(noteHasTag(note)).toBe(true);
-		expect(noteHasTag(note, "ANKILINK")).toBe(true);
-		expect(noteHasTag(note, "different-tag")).toBe(false);
-	});
+        expect(noteHasTag(note)).toBe(true);
+        expect(noteHasTag(note, "ANKILINK")).toBe(true);
+        expect(noteHasTag(note, "different-tag")).toBe(false);
+    });
 
-	it("addTagToNotes is a no-op for empty note lists", async () => {
-		const addTagsSpy = vi.spyOn(defaultAnkiConnectClient, "addTags");
+    it("addTagToNotes is a no-op for empty note lists", async () => {
+        const addTagsSpy = vi.spyOn(defaultAnkiConnectClient, "addTags");
 
-		await addTagToNotes([]);
+        await addTagToNotes([]);
 
-		expect(addTagsSpy).not.toHaveBeenCalled();
-	});
+        expect(addTagsSpy).not.toHaveBeenCalled();
+    });
 
-	it("findNoteIdsByTagInDeck escapes quotes in deck names", async () => {
-		const findNotesSpy = vi
-			.spyOn(defaultAnkiConnectClient, "findNotes")
-			.mockResolvedValue({ error: null, result: [1, 2, 3] });
+    it("findNoteIdsByTagInDeck escapes quotes in deck names", async () => {
+        const findNotesSpy = vi
+            .spyOn(defaultAnkiConnectClient, "findNotes")
+            .mockResolvedValue({ error: null, result: [1, 2, 3] });
 
-		const result = await findNoteIdsByTagInDeck('Deck "A"');
+        const result = await findNoteIdsByTagInDeck('Deck "A"');
 
-		expect(result).toEqual([1, 2, 3]);
-		expect(findNotesSpy).toHaveBeenCalledWith(String.raw`tag:ankiLink deck:"Deck \"A\""`);
-	});
+        expect(result).toEqual([1, 2, 3]);
+        expect(findNotesSpy).toHaveBeenCalledWith(String.raw`tag:ankiLink deck:"Deck \"A\""`);
+    });
 
-	it("getNoteById returns undefined for deleted-note placeholders", async () => {
-		vi.spyOn(defaultAnkiConnectClient, "notesInfo").mockResolvedValue({
-			error: null,
-			result: [{}],
-		});
+    it("getNoteById returns undefined for deleted-note placeholders", async () => {
+        vi.spyOn(defaultAnkiConnectClient, "notesInfo").mockResolvedValue({
+            error: null,
+            result: [{}],
+        });
 
-		await expect(getNoteById(999)).resolves.toBeUndefined();
-	});
+        await expect(getNoteById(999)).resolves.toBeUndefined();
+    });
 
-	it("getNoteById throws when AnkiConnect returns an error", async () => {
-		vi.spyOn(defaultAnkiConnectClient, "notesInfo").mockResolvedValue({
-			error: "boom",
-			result: [],
-		});
+    it("getNoteById throws when AnkiConnect returns an error", async () => {
+        vi.spyOn(defaultAnkiConnectClient, "notesInfo").mockResolvedValue({
+            error: "boom",
+            result: [],
+        });
 
-		await expect(getNoteById(123)).rejects.toThrow("AnkiConnect boom");
-	});
+        await expect(getNoteById(123)).rejects.toThrow("AnkiConnect boom");
+    });
 });

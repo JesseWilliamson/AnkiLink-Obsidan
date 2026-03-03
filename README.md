@@ -7,14 +7,16 @@ Turn your Obsidian notes into synced Anki flashcards for better retention.
 - Write flashcards inline in your notes using callouts.
 - Obsidian is treated as a single source of truth for generated flashcards, which are kept up-to-date with their obsidian sources.
 - Support rich card bodies including:
-  - Markdown formatting (lists, emphasis, tables, etc.)
-  - Code blocks
-  - Inline and block math with Latex
+    - Markdown formatting (lists, emphasis, tables, etc.)
+    - Code blocks
+    - Inline and block math with Latex
 
 ## Setup
+
 1. Install the plugin in Obsidian
 2. Install [Anki Connect Plus](https://ankiweb.net/shared/info/2036732292) in Anki
 3. In Anki, navigate to Tools -> Addons -> AnkiConnect -> Config, and add `app://obsidian.md` to the `webCordOriginList` like this:
+
 ```
 {
     "apiKey": null,
@@ -31,7 +33,7 @@ Turn your Obsidian notes into synced Anki flashcards for better retention.
 
 Each flashcard starts with a callout line and continues with quoted body lines:
 
-```
+````
 > [!flashcard] Explain Big-O for binary search.
 > Binary search runs in **O(log n)** time.
 >
@@ -44,7 +46,7 @@ Each flashcard starts with a callout line and continues with quoted body lines:
 > $$
 > \text{steps} \approx \log_2(n)
 > $$
-```
+````
 
 ### Notes
 
@@ -67,4 +69,3 @@ Each flashcard starts with a callout line and continues with quoted body lines:
 
 The plugin targets a model named `AnkiLink Basic` and ensures it exists.  
 On sync, it updates that model's templates/CSS so formatting stays consistent across cards.
-
