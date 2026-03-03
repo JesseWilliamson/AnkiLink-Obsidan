@@ -1,7 +1,7 @@
 {
     "id": "anki-link",
     "name": "Anki Link",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "minAppVersion": "0.15.0",
     "description": "Links obsidian notes with Anki using callouts.",
     "author": "Jesse",
