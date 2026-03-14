@@ -303,9 +303,14 @@ const ANKI_LINK_MODEL_CSS = `
 }
 
 .anki-link :not(pre) > code {
-  background: #f3f3f3;
-  color: #222;
+  background: #1e1e1e;
+  color: #d4d4d4;
   padding: 0.1em 0.3em;
   border-radius: 4px;
+}
+
+.nightMode .anki-link :not(pre) > code {
+  background: #121212;
+  color: #f5f5f5;
 }
 `.trim();

@@ -17,6 +17,7 @@ import {
     findNoteIdsByTagInDeck,
     getNoteById,
     noteHasTag,
+    sendUpdateModelStylingRequest,
 } from "./ankiConnectUtil";
 import type { NoteInfo } from "./anki-connect/types";
 
@@ -90,4 +91,17 @@ describe("ankiConnectUtil", () => {
 
         await expect(getNoteById(123)).rejects.toThrow("AnkiConnect boom");
     });
+    it("sendUpdateModelStylingRequest keeps inline code dark in dark mode", async () => {
+        const updateStylingSpy = vi
+            .spyOn(defaultAnkiConnectClient, "updateModelStyling")
+            .mockResolvedValue({ error: null, result: null });
+
+        await sendUpdateModelStylingRequest();
+
+        expect(updateStylingSpy).toHaveBeenCalledWith(
+            "AnkiLink Basic",
+            expect.stringContaining(".nightMode .anki-link :not(pre) > code"),
+        );
+    });
+
 });
