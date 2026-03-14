@@ -177,18 +177,6 @@ export async function deleteNotesById(noteIds: number[]): Promise<void> {
     assertNoError(deleteNotesRes);
 }
 
-export function buildNote(Front: string, Back: string, deckName = TARGET_DECK): Note {
-    return {
-        deckName,
-        modelName: DEFAULT_DECK_TYPE,
-        fields: { Front, Back },
-        tags: [ANKI_LINK_TAG],
-        options: {
-            allowDuplicate: true,
-        },
-    };
-}
-
 export async function sendCreateDeckRequest(deck: string): Promise<CreateDeckResult> {
     return toResult(defaultAnkiConnectClient.createDeck(deck));
 }
