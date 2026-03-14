@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { defaultAnkiConnectClient } from "./anki-connect/client";
+import { addTagToNotes, findNoteIdsByTagInDeck, getNoteById, noteHasTag } from "./ankiConnectUtil";
+import type { NoteInfo } from "./anki-connect/types";
 
 const { requestUrlMock } = vi.hoisted(() => ({
     requestUrlMock: vi.fn(),
@@ -8,33 +11,9 @@ vi.mock("obsidian", () => ({
     requestUrl: requestUrlMock,
 }));
 
-import { defaultAnkiConnectClient } from "./anki-connect/client";
-import {
-    ANKI_LINK_TAG,
-    TARGET_DECK,
-    addTagToNotes,
-    buildNote,
-    findNoteIdsByTagInDeck,
-    getNoteById,
-    noteHasTag,
-} from "./ankiConnectUtil";
-import type { NoteInfo } from "./anki-connect/types";
-
 describe("ankiConnectUtil", () => {
     afterEach(() => {
         vi.restoreAllMocks();
-    });
-
-    it("buildNote uses expected defaults", () => {
-        const note = buildNote("front text", "back text");
-
-        expect(note).toEqual({
-            deckName: TARGET_DECK,
-            modelName: "AnkiLink Basic",
-            fields: { Front: "front text", Back: "back text" },
-            tags: [ANKI_LINK_TAG],
-            options: { allowDuplicate: true },
-        });
     });
 
     it("noteHasTag compares tags case-insensitively", () => {

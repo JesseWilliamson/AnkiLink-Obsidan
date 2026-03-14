@@ -1,26 +1,23 @@
 import { App, TFile } from "obsidian";
-import { remark } from "remark";
-import remarkBreaks from "remark-breaks";
-import remarkGfm from "remark-gfm";
-import remarkHtml from "remark-html";
 import {
-    AnkiMultiAction,
     ANKI_LINK_MODEL_NAME,
     ANKI_LINK_TAG,
+    AnkiMultiAction,
+    DEFAULT_DECK_TYPE,
     Note,
     NoteFields,
-    NoteInfo,
-    buildNote,
     noteHasTag,
+    NoteInfo,
     sendCreateDeckRequest,
     sendCreateModelRequest,
     sendDeckNamesRequest,
-    sendMultiRequest,
     sendModelNamesRequest,
+    sendMultiRequest,
     sendUpdateModelStylingRequest,
     sendUpdateModelTemplatesRequest,
 } from "./ankiConnectUtil";
 import { FC_PREAMBLE_P } from "./regexUtil";
+import { marked } from "marked";
 
 const LOG_PREFIX = "[anki-link]";
 
@@ -197,8 +194,9 @@ async function loadSyncContexts(
     for (const file of markdownFiles) {
         const deckName = fileDecks.get(file.path);
         if (!deckName) continue;
+        // TODO: Can I speed this up by not waiting at each file?
         const lines = (await app.vault.read(file)).split("\n");
-        const notesData = parseDocument(lines, deckName);
+        const notesData = await parseDocument(lines, deckName);
         if (notesData.length === 0) continue;
         contexts.push({
             file,
@@ -396,310 +394,47 @@ async function ensureModelIsConfigured() {
     if (updateStylingRes.error) throw new Error(`AnkiConnect: ${updateStylingRes.error}`);
 }
 
-function parseDocument(lines: string[], deckName: string): ParsedNoteData[] {
+async function parseDocument(lines: string[], deckName: string): Promise<ParsedNoteData[]> {
     const output = new Array<ParsedNoteData>();
     let i = 0;
     while (i < lines.length) {
-        const { id, title } = parsePreamble(lines[i]!) || {};
+        const { id, title } = parseCalloutPreamble(lines[i]!) || {};
         if (!title) {
             i++;
             continue;
         }
 
-        const bodyLines = parseBody(lines.slice(i + 1));
-        const body = formatBodyForAnki(bodyLines);
-        const note = buildNote(title, body, deckName);
+        const bodyLines = parseCalloutBodyLines(lines.slice(i + 1));
+        const body = await mdLines2HtmlBlock(bodyLines);
+        const note = {
+            deckName,
+            modelName: DEFAULT_DECK_TYPE,
+            fields: { Front: title, Back: body },
+            tags: [ANKI_LINK_TAG],
+            options: {
+                allowDuplicate: true,
+            },
+        };
         output.push({ id: id ? Number(id) : undefined, index: i, note });
         i += bodyLines.length + 1;
     }
     return output;
 }
 
-type BodyToken =
-    | { type: "text"; raw: string }
-    | { type: "fence"; raw: string; marker: "```" | "~~~" | "$$"; info: string };
-
-type BodySegment =
-    | { type: "text"; lines: string[] }
-    | { type: "code"; language: string; code: string }
-    | { type: "math"; latex: string };
-
-const MATH_INLINE_OPEN = String.raw`\(`;
-const MATH_INLINE_CLOSE = String.raw`\)`;
-const MATH_BLOCK_OPEN = String.raw`\[`;
-const MATH_BLOCK_CLOSE = String.raw`\]`;
-const MARKDOWN_PROCESSOR = remark()
-    .use(remarkGfm)
-    .use(remarkBreaks)
-    .use(remarkHtml, { sanitize: false });
-
-function formatBodyForAnki(lines: string[]): string {
-    const tokens = lexBody(lines);
-    const segments = parseBodyTokens(tokens);
-    return renderBodySegments(segments);
+/**
+ * Parse markdown into HTML for anki flashcards
+ * @param lines
+ */
+async function mdLines2HtmlBlock(lines: string[]): Promise<string> {
+    const multiLineStr = lines.join("\n");
+    return marked.parse(multiLineStr);
 }
 
-function lexBody(lines: string[]): BodyToken[] {
-    return lines.map((line) => lexLine(line));
-}
-
-function lexLine(line: string): BodyToken {
-    const trimmed = line.trim();
-    if (trimmed === "$$") {
-        return { type: "fence", raw: line, marker: "$$", info: "" };
-    }
-    if (trimmed.startsWith("```")) {
-        return { type: "fence", raw: line, marker: "```", info: trimmed.slice(3).trim() };
-    }
-    if (trimmed.startsWith("~~~")) {
-        return { type: "fence", raw: line, marker: "~~~", info: trimmed.slice(3).trim() };
-    }
-    return { type: "text", raw: line };
-}
-
-function parseBodyTokens(tokens: BodyToken[]): BodySegment[] {
-    const segments: BodySegment[] = [];
-    const textBuffer: string[] = [];
-
-    const flushText = () => {
-        if (textBuffer.length === 0) return;
-        segments.push({ type: "text", lines: [...textBuffer] });
-        textBuffer.length = 0;
-    };
-
-    let i = 0;
-    while (i < tokens.length) {
-        const token = tokens[i]!;
-        if (token.type !== "fence") {
-            textBuffer.push(token.raw);
-            i++;
-            continue;
-        }
-
-        if (token.marker === "$$") {
-            const closingMathIdx = findClosingFenceToken(tokens, i + 1, "$$");
-            if (closingMathIdx === -1) {
-                textBuffer.push(token.raw);
-                i++;
-                continue;
-            }
-
-            flushText();
-            const latex = tokens
-                .slice(i + 1, closingMathIdx)
-                .map((currentToken) => currentToken.raw)
-                .join("\n");
-            segments.push({ type: "math", latex });
-            i = closingMathIdx + 1;
-            continue;
-        }
-
-        const closingFenceIdx = findClosingFenceToken(tokens, i + 1, token.marker);
-        if (closingFenceIdx === -1) {
-            // Keep unmatched fences as regular text to avoid dropping content.
-            textBuffer.push(token.raw);
-            i++;
-            continue;
-        }
-
-        flushText();
-        const code = tokens
-            .slice(i + 1, closingFenceIdx)
-            .map((currentToken) => currentToken.raw)
-            .join("\n");
-        segments.push({ type: "code", language: token.info, code });
-        i = closingFenceIdx + 1;
-    }
-
-    flushText();
-    return segments;
-}
-
-function findClosingFenceToken(
-    tokens: BodyToken[],
-    startIdx: number,
-    marker: "```" | "~~~" | "$$",
-): number {
-    for (let i = startIdx; i < tokens.length; i++) {
-        const token = tokens[i]!;
-        if (token.type === "fence" && token.marker === marker && token.info.length === 0) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-function renderBodySegments(segments: BodySegment[]): string {
-    return segments.map((segment) => renderSegment(segment)).join("\n");
-}
-
-function renderSegment(segment: BodySegment): string {
-    if (segment.type === "text") {
-        return renderMarkdownText(segment.lines);
-    }
-    if (segment.type === "code") {
-        const languageClass =
-            segment.language.length > 0
-                ? ` class="language-${escapeHtmlAttribute(segment.language)}"`
-                : "";
-        return `<pre><code${languageClass}>${escapeHtml(segment.code)}</code></pre>`;
-    }
-    return MATH_BLOCK_OPEN + segment.latex + MATH_BLOCK_CLOSE;
-}
-
-function renderMarkdownText(lines: string[]): string {
-    const markdown = lines.join("\n");
-    const { markdownWithPlaceholders, replacements } = extractInlineMathPlaceholders(markdown);
-    let rendered = String(MARKDOWN_PROCESSOR.processSync(markdownWithPlaceholders)).trim();
-    for (const [placeholder, replacement] of replacements) {
-        rendered = rendered.split(placeholder).join(replacement);
-    }
-    return rendered;
-}
-
-function extractInlineMathPlaceholders(markdown: string): {
-    markdownWithPlaceholders: string;
-    replacements: Map<string, string>;
-} {
-    let output = "";
-    const replacements = new Map<string, string>();
-    let placeholderCounter = 0;
-    let i = 0;
-    while (i < markdown.length) {
-        const inlineCode = consumeInlineCode(markdown, i);
-        if (inlineCode) {
-            output += inlineCode.text;
-            i += inlineCode.length;
-            continue;
-        }
-
-        const inlineMath = consumeInlineMath(markdown, i, placeholderCounter);
-        if (!inlineMath) {
-            output += markdown[i]!;
-            i++;
-            continue;
-        }
-
-        output += inlineMath.placeholder;
-        replacements.set(inlineMath.placeholder, inlineMath.replacement);
-        placeholderCounter = inlineMath.nextPlaceholderCounter;
-        i += inlineMath.length;
-    }
-    return { markdownWithPlaceholders: output, replacements };
-}
-
-function consumeInlineCode(
-    input: string,
-    startIdx: number,
-): { text: string; length: number } | null {
-    const char = input[startIdx];
-    if (char !== "`" || isEscaped(input, startIdx)) return null;
-
-    const tickRunLength = countSameCharRun(input, startIdx, "`");
-    const closeTickIdx = findMatchingTickRun(input, startIdx + tickRunLength, tickRunLength);
-    if (closeTickIdx === -1) return null;
-
-    const endIdx = closeTickIdx + tickRunLength;
-    return { text: input.slice(startIdx, endIdx), length: endIdx - startIdx };
-}
-
-function consumeInlineMath(
-    input: string,
-    startIdx: number,
-    placeholderCounter: number,
-): {
-    placeholder: string;
-    replacement: string;
-    length: number;
-    nextPlaceholderCounter: number;
-} | null {
-    const char = input[startIdx];
-    if (char !== "$" || isEscaped(input, startIdx)) return null;
-
-    const isDoubleDollar = input[startIdx + 1] === "$";
-    const openDelimiterLength = isDoubleDollar ? 2 : 1;
-    const closeIdx = findInlineMathEnd(input, startIdx + openDelimiterLength, isDoubleDollar);
-    if (closeIdx === -1) return null;
-
-    const contentStart = startIdx + openDelimiterLength;
-    const latex = input.slice(contentStart, closeIdx);
-    const closeDelimiterLength = isDoubleDollar ? 2 : 1;
-    const placeholder = `ANKILINK_MATH_${placeholderCounter}_TOKEN`;
-    return {
-        placeholder,
-        replacement: MATH_INLINE_OPEN + latex + MATH_INLINE_CLOSE,
-        length: closeIdx + closeDelimiterLength - startIdx,
-        nextPlaceholderCounter: placeholderCounter + 1,
-    };
-}
-
-function countSameCharRun(input: string, startIdx: number, char: string): number {
-    let runLength = 0;
-    for (let i = startIdx; i < input.length; i++) {
-        if (input[i] !== char) break;
-        runLength++;
-    }
-    return runLength;
-}
-
-function findMatchingTickRun(input: string, startIdx: number, tickRunLength: number): number {
-    let i = startIdx;
-    while (i < input.length) {
-        if (input[i] !== "`" || isEscaped(input, i)) {
-            i++;
-            continue;
-        }
-        if (countSameCharRun(input, i, "`") === tickRunLength) {
-            return i;
-        }
-        i++;
-    }
-    return -1;
-}
-
-function findInlineMathEnd(input: string, startIdx: number, isDoubleDollar: boolean): number {
-    for (let i = startIdx; i < input.length; i++) {
-        if (input[i] !== "$") continue;
-        if (isEscaped(input, i)) continue;
-        if (isDoubleDollar) {
-            if (input[i + 1] === "$") return i;
-            continue;
-        }
-        if (input[i + 1] === "$") continue;
-        return i;
-    }
-    return -1;
-}
-
-function isEscaped(input: string, idx: number): boolean {
-    let backslashes = 0;
-    for (let i = idx - 1; i >= 0 && input[i] === "\\"; i--) {
-        backslashes++;
-    }
-    return backslashes % 2 === 1;
-}
-
-function escapeHtml(value: string): string {
-    return value.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-}
-
-function escapeHtmlAttribute(value: string): string {
-    return value
-        .split("&")
-        .join("&amp;")
-        .split('"')
-        .join("&quot;")
-        .split("<")
-        .join("&lt;")
-        .split(">")
-        .join("&gt;");
-}
-
-function parseBody(lines: string[]) {
+function parseCalloutBodyLines(lines: string[]) {
     const bodyLines: string[] = [];
     for (const line of lines) {
         // Stop early if we reach another flashcard preamble.
-        if (parsePreamble(line)) {
+        if (parseCalloutPreamble(line)) {
             return bodyLines;
         }
         if (!line.startsWith(">")) {
@@ -710,7 +445,7 @@ function parseBody(lines: string[]) {
     return bodyLines;
 }
 
-function parsePreamble(str: string) {
+function parseCalloutPreamble(str: string) {
     const match = FC_PREAMBLE_P.exec(str);
     if (!match) {
         return undefined;
