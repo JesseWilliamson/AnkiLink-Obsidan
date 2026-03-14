@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultAnkiConnectClient } from "./anki-connect/client";
-import {
-    addTagToNotes,
-    findNoteIdsByTagInDeck,
-    getNoteById,
-    noteHasTag,
-} from "./ankiConnectUtil";
+import { addTagToNotes, findNoteIdsByTagInDeck, getNoteById, noteHasTag } from "./ankiConnectUtil";
 import type { NoteInfo } from "./anki-connect/types";
 
 const { requestUrlMock } = vi.hoisted(() => ({
