@@ -146,11 +146,11 @@ async function findNotesByQuery(query: string): Promise<number[]> {
     return findNotesRes.result;
 }
 
-export async function findNoteIdsByTag(tag = ANKI_LINK_TAG): Promise<number[]> {
+export function findNoteIdsByTag(tag = ANKI_LINK_TAG): Promise<number[]> {
     return findNotesByQuery(`tag:${tag}`);
 }
 
-export async function findNoteIdsByTagInDeck(
+export function findNoteIdsByTagInDeck(
     deckName: string,
     tag = ANKI_LINK_TAG,
 ): Promise<number[]> {
@@ -189,15 +189,15 @@ export function buildNote(Front: string, Back: string, deckName = TARGET_DECK): 
     };
 }
 
-export async function sendCreateDeckRequest(deck: string): Promise<CreateDeckResult> {
+export function sendCreateDeckRequest(deck: string): Promise<CreateDeckResult> {
     return toResult(defaultAnkiConnectClient.createDeck(deck));
 }
 
-export async function sendModelNamesRequest(): Promise<ModelNamesResult> {
+export function sendModelNamesRequest(): Promise<ModelNamesResult> {
     return toResult(defaultAnkiConnectClient.modelNames());
 }
 
-export async function sendCreateModelRequest(
+export function sendCreateModelRequest(
     modelName = ANKI_LINK_MODEL_NAME,
 ): Promise<CreateModelResult> {
     return toResult(
@@ -217,7 +217,7 @@ export async function sendCreateModelRequest(
     );
 }
 
-export async function sendUpdateModelTemplatesRequest(
+export function sendUpdateModelTemplatesRequest(
     modelName = ANKI_LINK_MODEL_NAME,
 ): Promise<UpdateModelTemplatesResult> {
     const templates = {
@@ -229,36 +229,36 @@ export async function sendUpdateModelTemplatesRequest(
     return toResult(defaultAnkiConnectClient.updateModelTemplates(modelName, templates));
 }
 
-export async function sendUpdateModelStylingRequest(
+export function sendUpdateModelStylingRequest(
     modelName = ANKI_LINK_MODEL_NAME,
 ): Promise<UpdateModelStylingResult> {
     return toResult(defaultAnkiConnectClient.updateModelStyling(modelName, ANKI_LINK_MODEL_CSS));
 }
 
-export async function sendAddNoteRequest(note: Note): Promise<AddNoteResult> {
+export function sendAddNoteRequest(note: Note): Promise<AddNoteResult> {
     return toResult(defaultAnkiConnectClient.addNote(note));
 }
 
-export async function sendAddNotesRequest(notes: Note[]): Promise<AddNotesResult> {
+export function sendAddNotesRequest(notes: Note[]): Promise<AddNotesResult> {
     return toResult(defaultAnkiConnectClient.addNotes(notes));
 }
 
-export async function sendNotesInfoRequest(notes: number[]): Promise<NotesInfoResult> {
+export function sendNotesInfoRequest(notes: number[]): Promise<NotesInfoResult> {
     return toResult(defaultAnkiConnectClient.notesInfo(notes));
 }
 
-export async function sendUpdateNoteFieldsRequest(
+export function sendUpdateNoteFieldsRequest(
     id: number,
     fields: NoteFields,
 ): Promise<UpdateNoteFieldsResult> {
     return toResult(defaultAnkiConnectClient.updateNoteFields(id, fields));
 }
 
-export async function sendMultiRequest(actions: AnkiMultiAction[]): Promise<MultiResult> {
+export function sendMultiRequest(actions: AnkiMultiAction[]): Promise<MultiResult> {
     return toResult(defaultAnkiConnectClient.multi(actions));
 }
 
-export async function sendDeckNamesRequest(): Promise<DeckNamesResult> {
+export function sendDeckNamesRequest(): Promise<DeckNamesResult> {
     return toResult(defaultAnkiConnectClient.deckNames());
 }
 
@@ -270,7 +270,7 @@ export function buildDeckNamesRequest(): RequestUrlParam {
     };
 }
 
-async function toResult<T>(
+function toResult<T>(
     promise: Promise<AnkiActionResponse<T>>,
 ): Promise<AnkiActionResponse<T>> {
     return promise;

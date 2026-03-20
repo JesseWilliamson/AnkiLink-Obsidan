@@ -67,23 +67,23 @@ export class AnkiConnectClient {
         }
     }
 
-    async deckNames(): Promise<AnkiActionResponse<string[]>> {
+    deckNames(): Promise<AnkiActionResponse<string[]>> {
         return this.send<string[]>("deckNames");
     }
 
-    async createDeck(deck: string): Promise<AnkiActionResponse<number>> {
+    createDeck(deck: string): Promise<AnkiActionResponse<number>> {
         return this.send<number>("createDeck", { deck });
     }
 
-    async modelNames(): Promise<AnkiActionResponse<string[]>> {
+    modelNames(): Promise<AnkiActionResponse<string[]>> {
         return this.send<string[]>("modelNames");
     }
 
-    async createModel(model: CreateModelInput): Promise<AnkiActionResponse<null>> {
+    createModel(model: CreateModelInput): Promise<AnkiActionResponse<null>> {
         return this.send<null>("createModel", model);
     }
 
-    async updateModelTemplates(
+    updateModelTemplates(
         modelName: string,
         templates: Record<string, { Front: string; Back: string }>,
     ): Promise<AnkiActionResponse<null>> {
@@ -92,45 +92,45 @@ export class AnkiConnectClient {
         });
     }
 
-    async updateModelStyling(modelName: string, css: string): Promise<AnkiActionResponse<null>> {
+    updateModelStyling(modelName: string, css: string): Promise<AnkiActionResponse<null>> {
         return this.send<null>("updateModelStyling", {
             model: { name: modelName, css },
         });
     }
 
-    async addNote(note: Note): Promise<AnkiActionResponse<number>> {
+    addNote(note: Note): Promise<AnkiActionResponse<number>> {
         return this.send<number>("addNote", { note });
     }
 
-    async addNotes(notes: Note[]): Promise<AnkiActionResponse<(number | null)[]>> {
+    addNotes(notes: Note[]): Promise<AnkiActionResponse<(number | null)[]>> {
         return this.send<(number | null)[]>("addNotes", { notes });
     }
 
-    async addTags(notes: number[], tags: string): Promise<AnkiActionResponse<null>> {
+    addTags(notes: number[], tags: string): Promise<AnkiActionResponse<null>> {
         return this.send<null>("addTags", { notes, tags });
     }
 
-    async findNotes(query: string): Promise<AnkiActionResponse<number[]>> {
+    findNotes(query: string): Promise<AnkiActionResponse<number[]>> {
         return this.send<number[]>("findNotes", { query });
     }
 
-    async deleteNotes(notes: number[]): Promise<AnkiActionResponse<null>> {
+    deleteNotes(notes: number[]): Promise<AnkiActionResponse<null>> {
         return this.send<null>("deleteNotes", { notes });
     }
 
-    async notesInfo(notes: number[]): Promise<AnkiActionResponse<unknown[]>> {
+    notesInfo(notes: number[]): Promise<AnkiActionResponse<unknown[]>> {
         return this.send<unknown[]>("notesInfo", { notes });
     }
 
-    async updateNoteFields(id: number, fields: NoteFields): Promise<AnkiActionResponse<null>> {
+    updateNoteFields(id: number, fields: NoteFields): Promise<AnkiActionResponse<null>> {
         return this.send<null>("updateNoteFields", { note: { id, fields } });
     }
 
-    async changeDeck(cards: number[], deck: string): Promise<AnkiActionResponse<null>> {
+    changeDeck(cards: number[], deck: string): Promise<AnkiActionResponse<null>> {
         return this.send<null>("changeDeck", { cards, deck });
     }
 
-    async multi(
+    multi(
         actions: AnkiMultiAction[],
     ): Promise<AnkiActionResponse<AnkiActionResponse<unknown>[]>> {
         return this.send<AnkiActionResponse<unknown>[]>("multi", { actions });

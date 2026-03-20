@@ -35,7 +35,7 @@ export default class AnkiLink extends Plugin {
         this.registerDomEvent(this.statusBarItemEl, "click", () => {
             void this.showMissingDeckNotesModal();
         });
-        void this.refreshStatusBar();
+        await this.refreshStatusBar();
 
         this.registerEvent(
             this.app.workspace.on("file-open", () => {
